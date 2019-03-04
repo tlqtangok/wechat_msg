@@ -100,15 +100,21 @@ app.post('/*', function(req, res)
 
     */
 
-
 	console.log("- POST method, with path: " + req.path + " at\t" + get_date_string() ); 
 
     var xml_content = req.body.xml;
 
+	var flag_from_jd = (xml_content.FromUserName[0] == "oWJ5CwSiI0_NSAjdUy9LiYHU9wYk"); 
+
+
+
     var flag_text = 0;
     if (xml_content.MsgType[0] == "text") {
-		console.log("___xml_content___"); 
-        console.log(xml_content);
+		
+		var msg ={ "from":xml_content.FromUserName[0], "Content":xml_content.Content[0]}; 
+		console.log();
+        console.log(msg);
+
 		console.log(""); 
 
 		//console.log(xml_content.Content[0]);
@@ -119,7 +125,7 @@ app.post('/*', function(req, res)
 
 
 	if (flag_text) {
-		res.send( create_res_xml(xml_content) );
+		res.send( create_res_xml(xml_content));
 	} else {
 		res.send("");
     }
@@ -137,6 +143,29 @@ app.listen(port);
 console.log('Server started! At http://localhost:' + port);
 
 
+
+
+
+if(0)
+{
+	var WechatAPI = require('wechat-api');
+	var wechat_config = {
+		"EncodingAESKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+		"appid": "wx323cd2b6{2}fd04e1e",
+		"appsecret": "c5a3919480831e589cea4c1f3e2a3${zero}b7"
+	}; 
+
+	var api = new WechatAPI(wechat_config.appid, wechat_config.appsecret);
+	var open_id = "oWJ5CwSiI0${UNDERSCORE}NSAjdUy9LiYHU9wYk"; 
+	// right now, I don't have auth , need RMB 300 for certification-process
+	api.getUser(open_id, function (err, data, res) {
+		console.log(data); 
+		console.log(res); 
+	});
+}
+
+
+
 //### sub list ### 
 function create_res_xml(xml_content) 
 {
@@ -147,13 +176,15 @@ function create_res_xml(xml_content)
 1551689226  // createTime
 */
 
-
 	var f_ = "f"; 
 	var t_ = "t"; 
 
     [f_, t_] = [xml_content.ToUserName[0], xml_content.FromUserName[0]];
 
 	var new_createtime =  Math.floor(Date.now() / 1000) ;
+
+	var welcome_stat =  xml_content.FromUserName[0] == "oWJ5CwSiI0_NSAjdUy9LiYHU9wYk"? "welcome jd": "welcome"; 
+	var jd_geek = `泛智能时代`;
 
     var templ =
         `
@@ -162,11 +193,11 @@ function create_res_xml(xml_content)
 		<FromUserName><![CDATA[${f_}]]></FromUserName>
 		<CreateTime>${new_createtime}</CreateTime>
 		<MsgType><![CDATA[text]]></MsgType>
-		<Content><![CDATA[jd_geek has already got your text:\n${xml_content.Content[0]}]]></Content>
+		<Content><![CDATA[${welcome_stat}\n${jd_geek} got text message\n\n---msg---\n${xml_content.Content[0]}\n---]]></Content>
 		</xml>
 		`;
-    return templ;
 
+    return templ;
 }
 
 function get_date_string()
