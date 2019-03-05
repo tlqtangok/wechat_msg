@@ -21,47 +21,23 @@ var port = 80;
 
 
 // GET
-app.get('/wechat?', function(req, res) 
+app.get('/wechat/?', function(req, res) 
 {  // only match eq "/wechat"
 
-		// 微信token认证底层实现
-		function sha1(str) {
-			var md5sum = crypto.createHash("sha1");
-			md5sum.update(str);
-			str = md5sum.digest("hex");
-			return str;
-		};
-
-		function validateToken(req, res) {
-			var query = url.parse(req.url, true).query;
-			// console.log("*** URL:" + req.url);
-			// console.log(query);
-			var signature = query.signature;
-			var echostr = query.echostr;
-			var timestamp = query['timestamp'];
-			var nonce = query.nonce;
-			var oriArray = new Array();
-			oriArray[0] = nonce;
-			oriArray[1] = timestamp;
-			//oriArray[2] = config.wechat_validate.token; //微信开发者中心页面里填的token
-			oriArray[2] = "xxx"; //微信开发者中心页面里填的token
-			oriArray.sort();
-			var original = oriArray.join('');
-			console.log("Original str : " + original);
-			console.log("Signature : " + signature);
-			var scyptoString = sha1(original);
-			if (signature == scyptoString) {
-				console.log("Confirm and send echo back");
-				res.end(echostr);
-			} else {
-				res.end("false");
-				console.log("Failed!");
-			}
-		};
-
-
 		console.log("- GET method, pattern [/wechat*] with path: " + req.path + " at\t" + get_date_string() ); 
-		validateToken(req, res);
+		var flag_ret = validateToken(req, res);
+
+		if (flag_ret)
+		{
+			var query = url.parse(req.url, true).query;
+			res.send(query.echostr); 
+		}
+		else
+		{
+			res.end("wrong"); 
+			console.log("- error, wrong msg source")
+			return; 
+		}
 
 });
 
@@ -85,8 +61,16 @@ app.get('/', function(req, res, next)
 
 app.use(bodyParser.xml());
 // POST
-app.post('/*', function(req, res) 
+app.post('/*', function(req, res, next) 
 {
+	var flag_ret = validateToken(req,res); 
+	if(!flag_ret)
+	{
+		console.log("- error, msg not from /wechat ")
+		console.log("- next route"); 
+		res.end("");
+	}
+
     /*
 
     <xml>
@@ -100,30 +84,32 @@ app.post('/*', function(req, res)
 
     */
 
+	if(0)
+	{
+		console.log("___req___"); 
+		console.log(req); 
+	}
+
+
 	console.log("- POST method, with path: " + req.path + " at\t" + get_date_string() ); 
 
     var xml_content = req.body.xml;
 
-	var flag_from_jd = (xml_content.FromUserName[0] == "oWJ5CwSiI0_NSAjdUy9LiYHU9wYk"); 
 
-
-
+	// show post console.log
     var flag_text = 0;
     if (xml_content.MsgType[0] == "text") {
-		
 		var msg ={ "from":xml_content.FromUserName[0], "Content":xml_content.Content[0]}; 
 		console.log();
         console.log(msg);
-
 		console.log(""); 
-
-		//console.log(xml_content.Content[0]);
         flag_text = 1;
     } else {
         console.log("- not text, it is " + xml_content.MsgType[0]);
     }
 
 
+	// send back the xml content
 	if (flag_text) {
 		res.send( create_res_xml(xml_content));
 	} else {
@@ -141,7 +127,6 @@ app.listen(port);
 
 
 console.log('Server started! At http://localhost:' + port);
-
 
 
 
@@ -167,6 +152,55 @@ if(0)
 
 
 //### sub list ### 
+// 微信token认证底层实现
+function sha1(str) {
+	var md5sum = crypto.createHash("sha1");
+	md5sum.update(str);
+	str = md5sum.digest("hex");
+	return str;
+}
+
+function validateToken(req, res) {
+    var flag_return = 0; 
+
+	var query = url.parse(req.url, true).query;
+	
+
+	if ( ! ("timestamp" in query && "signature" in query) )
+	{
+		console.log("- error, request not from wechat official!"); 
+		return flag_return; 	
+	}
+
+	// console.log("*** URL:" + req.url);
+	// console.log(query);
+	var signature = query.signature;
+	//var echostr = query.echostr;
+	var timestamp = query['timestamp'];
+	var nonce = query.nonce;
+	var oriArray = new Array();
+	oriArray[0] = nonce;
+	oriArray[1] = timestamp;
+	//oriArray[2] = config.wechat_validate.token; //微信开发者中心页面里填的token
+	oriArray[2] = "xxx"; //微信开发者中心页面里填的token
+	oriArray.sort();
+	var original = oriArray.join('');
+	//console.log("Original str : " + original);
+	//console.log("Signature : " + signature);
+	var scyptoString = sha1(original);
+	if (signature == scyptoString) {
+		//console.log("Confirm and send echo back");
+		flag_return = 1; 
+		//res.end(echostr);
+	} else {
+		//res.end("false");
+		console.log("Failed!");
+		flag_return = 0; 
+	}
+	return flag_return; 
+}
+
+
 function create_res_xml(xml_content) 
 {
 
