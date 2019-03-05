@@ -217,7 +217,12 @@ function create_res_xml(xml_content)
 
 	var new_createtime =  Math.floor(Date.now() / 1000) ;
 
-	var welcome_stat =  xml_content.FromUserName[0] == "oWJ5CwSiI0_NSAjdUy9LiYHU9wYk"? "welcome jd": "welcome"; 
+
+	var userid = get_userid(xml_content.FromUserName[0]); 
+
+	var welcome_stat = userid == "jd"?"welcome jd !": (userid == "ls"? "welcome ls !": "welcome !"); 
+
+	
 	var jd_geek = `泛智能时代`;
 
     var templ =
@@ -247,6 +252,24 @@ function get_date_string()
 		pad(d.getHours())+colon+
 		pad(d.getMinutes())+colon+
 		pad(d.getSeconds())
+}
+
+function get_userid(openid)
+{
+
+	var userid = "others"; 
+
+	var openid_to_whom = {
+		"oWJ5CwR9HKLdxV4rYCglcCwLtBz4":"ls",
+		"oWJ5CwSiI0_NSAjdUy9LiYHU9wYk":"jd"
+	};
+
+
+	if (openid in openid_to_whom)
+	{
+		userid = openid_to_whom[openid]; 
+	}
+	return userid; 
 }
 
 function m_(id_text, re)
